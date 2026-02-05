@@ -12,6 +12,8 @@ if (process.platform === 'linux') {
   app.commandLine.appendSwitch('no-sandbox');
   app.commandLine.appendSwitch('disable-gpu');
   app.commandLine.appendSwitch('disable-software-rasterizer');
+  // Force X11 instead of Wayland to prevent SIGSEGV crashes
+  app.commandLine.appendSwitch('ozone-platform', 'x11');
 }
 
 let mainWindow: BrowserWindow | null = null;
@@ -24,18 +26,21 @@ const MAX_RECONNECT_DELAY = 30000;
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 function createWindow(): void {
-  secureLog.info('Creating BrowserWindow instance');
-
   const preloadPath = path.join(__dirname, 'preload.js');
-  secureLog.info('Preload path', { preloadPath });
 
-  // Minimal window config to isolate crash
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    minWidth: 800,
+    minHeight: 600,
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+    title: 'Secure Messenger',
   });
-
-  secureLog.info('BrowserWindow instance created');
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
@@ -181,12 +186,9 @@ function setupIpcHandlers(): void {
 
 app.whenReady().then(() => {
   secureLog.info('App starting');
-  secureLog.info('Creating window first (before database)');
-  createWindow();
-  secureLog.info('Window created, now initializing database');
   initDatabase();
-  secureLog.info('Setting up IPC handlers');
   setupIpcHandlers();
+  createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
