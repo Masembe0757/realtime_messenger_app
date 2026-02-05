@@ -225,7 +225,7 @@ app.on('web-contents-created', (_event, contents) => {
   });
 });
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions - use secureLog to avoid leaking sensitive data
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  secureLog.error('Uncaught Exception', error);
 });
