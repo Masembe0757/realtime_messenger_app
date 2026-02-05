@@ -1,14 +1,9 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
 
-// Linux-specific fixes for GPU and sandbox issues
+// Linux-specific fixes for GPU issues
 if (process.platform === 'linux') {
   app.disableHardwareAcceleration();
-  app.commandLine.appendSwitch('disable-gpu');
-  app.commandLine.appendSwitch('disable-software-rasterizer');
-  app.commandLine.appendSwitch('no-sandbox');
-  app.commandLine.appendSwitch('disable-gpu-sandbox');
-  app.commandLine.appendSwitch('disable-dev-shm-usage');
 }
 
 let mainWindow: BrowserWindow | null = null;
