@@ -12,7 +12,9 @@
     "build:electron": "tsc -p tsconfig.node.json",
     "start": "electron .",
     "test": "echo \"Tests not yet implemented\" && exit 0",
-    "package": "npm run build && electron-builder"
+    "package": "npm run build && electron-builder",
+    "postinstall": "electron-rebuild",
+    "rebuild": "electron-rebuild"
   },
   "repository": {
     "type": "git",
@@ -47,6 +49,7 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.2.0",
     "@types/react": "^19.2.11",
