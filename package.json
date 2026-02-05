@@ -2,7 +2,7 @@
   "name": "secure-messenger",
   "version": "1.0.0",
   "description": "Secure Messenger Desktop - Chat List + Sync Simulator",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
