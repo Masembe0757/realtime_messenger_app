@@ -80,17 +80,23 @@ export function seedDatabase(): void {
   ];
 
   const seedTransaction = database.transaction(() => {
+    // First, create all chat records
     for (let i = 0; i < 200; i++) {
       const chatId = uuidv4();
       const title = `Chat ${i + 1} - ${senders[i % senders.length]}`;
       chats.push({ id: chatId, title });
+      // Insert chat with placeholder timestamp (will update later)
+      insertChat.run(chatId, title, 0, 0);
     }
 
     const totalMessages = 20000;
     const perChat = Math.floor(totalMessages / chats.length);
     const extra = totalMessages % chats.length;
-    let baseTs = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const baseTs = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
+    const updateChat = database.prepare('UPDATE chats SET lastMessageAt = ?, unreadCount = ? WHERE id = ?');
+
+    // Then insert messages for each chat
     for (let ci = 0; ci < chats.length; ci++) {
       const chat = chats[ci];
       const msgCount = perChat + (ci < extra ? 1 : 0);
@@ -104,8 +110,9 @@ export function seedDatabase(): void {
         lastTs = Math.max(lastTs, ts);
       }
 
+      // Update chat with final lastMessageAt and random unread count
       const unread = Math.floor(Math.random() * 10);
-      insertChat.run(chat.id, chat.title, lastTs, unread);
+      updateChat.run(lastTs, unread, chat.id);
     }
   });
 
