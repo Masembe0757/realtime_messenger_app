@@ -29,18 +29,10 @@ function createWindow(): void {
   const preloadPath = path.join(__dirname, 'preload.js');
   secureLog.info('Preload path', { preloadPath });
 
+  // Minimal window config to isolate crash
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    minWidth: 800,
-    minHeight: 600,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
-    title: 'Secure Messenger',
   });
 
   secureLog.info('BrowserWindow instance created');
