@@ -6,6 +6,9 @@ import { IpcChannel, GetChatsParams, GetMessagesParams, SearchMessagesParams, Co
 import { secureLog } from '../shared/SecurityService';
 import WebSocket from 'ws';
 
+// Disable hardware acceleration to prevent GPU-related crashes on some Linux systems
+app.disableHardwareAcceleration();
+
 let mainWindow: BrowserWindow | null = null;
 let wsClient: WebSocket | null = null;
 let reconnectAttempts = 0;
