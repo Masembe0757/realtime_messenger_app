@@ -1,49 +1,52 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import {
-  IpcChannel, GetChatsParams, GetMessagesParams, SearchMessagesParams,
-  Chat, Message, PaginatedResponse, ConnectionState,
-} from '../shared/types';
 
-export interface ElectronAPI {
-  getChats: (params: GetChatsParams) => Promise<PaginatedResponse<Chat>>;
-  getMessages: (params: GetMessagesParams) => Promise<PaginatedResponse<Message>>;
-  searchMessages: (params: SearchMessagesParams) => Promise<PaginatedResponse<Message>>;
-  markChatAsRead: (chatId: string) => Promise<void>;
-  seedDatabase: () => Promise<void>;
-  connectWebSocket: () => Promise<void>;
-  disconnectWebSocket: () => Promise<void>;
-  simulateConnectionDrop: () => Promise<void>;
-  onConnectionStateChange: (callback: (state: ConnectionState) => void) => () => void;
-  onNewMessage: (callback: (message: Message & { chatId: string }) => void) => () => void;
-}
+// IPC Channel constants - inline to avoid import issues in preload
+const IpcChannel = {
+  DB_GET_CHATS: 'db:get-chats',
+  DB_GET_MESSAGES: 'db:get-messages',
+  DB_SEARCH_MESSAGES: 'db:search-messages',
+  DB_MARK_CHAT_READ: 'db:mark-chat-read',
+  DB_SEED_DATA: 'db:seed-data',
+  WS_CONNECT: 'ws:connect',
+  WS_DISCONNECT: 'ws:disconnect',
+  WS_SIMULATE_DROP: 'ws:simulate-drop',
+  WS_STATE_CHANGE: 'ws:state-change',
+  WS_NEW_MESSAGE: 'ws:new-message',
+} as const;
 
-const electronAPI: ElectronAPI = {
-  getChats: (params) => ipcRenderer.invoke(IpcChannel.DB_GET_CHATS, params),
-  getMessages: (params) => ipcRenderer.invoke(IpcChannel.DB_GET_MESSAGES, params),
-  searchMessages: (params) => ipcRenderer.invoke(IpcChannel.DB_SEARCH_MESSAGES, params),
-  markChatAsRead: (chatId) => ipcRenderer.invoke(IpcChannel.DB_MARK_CHAT_READ, chatId),
-  seedDatabase: () => ipcRenderer.invoke(IpcChannel.DB_SEED_DATA),
+// Expose protected methods to the renderer process
+contextBridge.exposeInMainWorld('electronAPI', {
+  // Database operations
+  getChats: (params: { limit: number; offset: number }) =>
+    ipcRenderer.invoke(IpcChannel.DB_GET_CHATS, params),
+  getMessages: (params: { chatId: string; limit: number; beforeTs?: number }) =>
+    ipcRenderer.invoke(IpcChannel.DB_GET_MESSAGES, params),
+  searchMessages: (params: { chatId: string; query: string; limit: number }) =>
+    ipcRenderer.invoke(IpcChannel.DB_SEARCH_MESSAGES, params),
+  markChatAsRead: (chatId: string) =>
+    ipcRenderer.invoke(IpcChannel.DB_MARK_CHAT_READ, chatId),
+  seedDatabase: () =>
+    ipcRenderer.invoke(IpcChannel.DB_SEED_DATA),
+
+  // WebSocket operations
   connectWebSocket: () => ipcRenderer.invoke(IpcChannel.WS_CONNECT),
   disconnectWebSocket: () => ipcRenderer.invoke(IpcChannel.WS_DISCONNECT),
   simulateConnectionDrop: () => ipcRenderer.invoke(IpcChannel.WS_SIMULATE_DROP),
 
-  onConnectionStateChange: (callback) => {
-    const handler = (_event: Electron.IpcRendererEvent, state: ConnectionState) => callback(state);
+  // Event listeners
+  onConnectionStateChange: (callback: (state: string) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, state: string) => callback(state);
     ipcRenderer.on(IpcChannel.WS_STATE_CHANGE, handler);
     return () => ipcRenderer.removeListener(IpcChannel.WS_STATE_CHANGE, handler);
   },
 
-  onNewMessage: (callback) => {
-    const handler = (_event: Electron.IpcRendererEvent, message: Message & { chatId: string }) => callback(message);
+  onNewMessage: (callback: (message: unknown) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, message: unknown) => callback(message);
     ipcRenderer.on(IpcChannel.WS_NEW_MESSAGE, handler);
     return () => ipcRenderer.removeListener(IpcChannel.WS_NEW_MESSAGE, handler);
   },
-};
 
-contextBridge.exposeInMainWorld('electronAPI', electronAPI);
-
-declare global {
-  interface Window {
-    electronAPI: ElectronAPI;
-  }
-}
+  // Platform info
+  platform: process.platform,
+  isElectron: true,
+});
