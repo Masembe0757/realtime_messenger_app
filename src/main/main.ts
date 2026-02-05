@@ -6,14 +6,14 @@ import { IpcChannel, GetChatsParams, GetMessagesParams, SearchMessagesParams, Co
 import { secureLog } from '../shared/SecurityService';
 import WebSocket from 'ws';
 
-// Linux-specific fixes for Electron crashes
+// Linux-specific fixes for GPU and sandbox issues
 if (process.platform === 'linux') {
   app.disableHardwareAcceleration();
-  app.commandLine.appendSwitch('no-sandbox');
   app.commandLine.appendSwitch('disable-gpu');
   app.commandLine.appendSwitch('disable-software-rasterizer');
-  // Force X11 instead of Wayland to prevent SIGSEGV crashes
-  app.commandLine.appendSwitch('ozone-platform', 'x11');
+  app.commandLine.appendSwitch('no-sandbox');
+  app.commandLine.appendSwitch('disable-gpu-sandbox');
+  app.commandLine.appendSwitch('disable-dev-shm-usage');
 }
 
 let mainWindow: BrowserWindow | null = null;
