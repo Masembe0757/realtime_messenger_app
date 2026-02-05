@@ -6,8 +6,13 @@ import { IpcChannel, GetChatsParams, GetMessagesParams, SearchMessagesParams, Co
 import { secureLog } from '../shared/SecurityService';
 import WebSocket from 'ws';
 
-// Disable hardware acceleration to prevent GPU-related crashes on some Linux systems
-app.disableHardwareAcceleration();
+// Linux-specific fixes for Electron crashes
+if (process.platform === 'linux') {
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch('no-sandbox');
+  app.commandLine.appendSwitch('disable-gpu');
+  app.commandLine.appendSwitch('disable-software-rasterizer');
+}
 
 let mainWindow: BrowserWindow | null = null;
 let wsClient: WebSocket | null = null;
@@ -178,8 +183,11 @@ function setupIpcHandlers(): void {
 app.whenReady().then(() => {
   secureLog.info('App starting');
   initDatabase();
+  secureLog.info('Setting up IPC handlers');
   setupIpcHandlers();
+  secureLog.info('Creating window');
   createWindow();
+  secureLog.info('Window created');
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
